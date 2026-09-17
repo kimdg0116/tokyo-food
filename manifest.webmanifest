@@ -1,0 +1,16 @@
+{
+  "name": "도쿄 맛집",
+  "short_name": "도쿄 맛집",
+  "description": "도쿄 맛집 216곳 — 「토요일의 도쿄」 채널 정리",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#15181D",
+  "theme_color": "#15181D",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
