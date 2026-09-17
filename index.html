@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#EDEEF1" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#111317" media="(prefers-color-scheme: dark)">
 <meta name="description" content="도쿄 맛집 216곳 — 「토요일의 도쿄」 채널 정리">
@@ -79,6 +79,8 @@
   :root[data-theme="light"]{color-scheme:light}
 
   html,body{height:100%}
+  /* 앱 화면은 손가락으로 확대하지 않는다 (지도는 아래에서 따로 허용) */
+  html,body{touch-action:pan-x pan-y}
   body{
     margin:0;
     background:var(--ground);
@@ -193,10 +195,12 @@
   @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .dist{color:#6EA8FE} }
 
   /* ---- 지도 ---- */
-  .mapbox{position:relative;margin-inline:-16px}
+  /* z-index:0 으로 지도를 한 층에 가둔다 — Leaflet 내부 z-index(400~700)가
+     페이지의 시트·스크림(40~41) 위로 올라오지 않게 */
+  .mapbox{position:relative;z-index:0;margin-inline:-16px}
   #map{height:calc(100vh - 250px);height:calc(100dvh - 250px);min-height:360px;background:var(--surface-2);border-block:1px solid var(--line-soft)}
   .mapnote{font-size:12px;color:var(--ink-3);padding:6px 16px 0}
-  .leaflet-container{font-family:inherit}
+  .leaflet-container{font-family:inherit;touch-action:none}   /* 지도만 확대·회전 제스처 허용 */
   /* 어두운 화면: 지도 타일만 반전해 눈부심을 줄인다 */
   :root[data-theme="dark"] .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}
   @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)} }
@@ -899,7 +903,7 @@
 </script>
 <script>
   (function(){
-    var CURRENT = "26.09.18-0049";
+    var CURRENT = "26.09.18-0832";
     var btn = document.getElementById("upd");
     var latest = null;
 
