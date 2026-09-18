@@ -36,6 +36,7 @@
     --good:#1C7248;
     --good-soft:#DCEFE4;
     --star:#C98A0B;
+    --blue:#1F6FEB;
     --shadow:0 1px 2px rgba(20,24,30,.08), 0 6px 18px rgba(20,24,30,.06);
     --radius:10px;
   }
@@ -55,6 +56,7 @@
       --good:#4CC98A;
       --good-soft:#15301F;
       --star:#F2C14E;
+      --blue:#6EA8FE;
       --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.28);
     }
   }
@@ -74,6 +76,7 @@
     --good:#4CC98A;
     --good-soft:#15301F;
     --star:#F2C14E;
+    --blue:#6EA8FE;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.28);
   }
   :root[data-theme="light"]{color-scheme:light}
@@ -149,16 +152,17 @@
   .daybar{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none}
   .daybar::-webkit-scrollbar{display:none}
   .dchip{
-    flex:1 0 auto;min-width:44px;border:1px solid var(--line);background:var(--surface);border-radius:10px;
-    padding:5px 6px;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.15;color:var(--ink-2);
+    flex:1 0 auto;min-width:40px;border:1px solid var(--line);background:var(--surface);border-radius:10px;
+    padding:8px 6px;display:grid;place-items:center;line-height:1;color:var(--ink-2);
   }
-  .dchip b{font-size:13px;font-weight:600}
-  .dchip small{font-size:10px;color:var(--ink-3)}
+  .dchip b{font-size:14px;font-weight:600}
   .dchip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--ground)}
-  .dchip[aria-pressed="true"] small{color:var(--ground);opacity:.75}
+  .dchip[aria-pressed="true"] b{color:var(--ground)}
   .dchip.sun b{color:var(--accent)}
-  .dchip.sun[aria-pressed="true"] b{color:var(--ground)}
-  .dchip .td{font-size:9.5px;letter-spacing:.04em}
+  .dchip.sat b{color:var(--blue)}
+  /* 오늘 = 테두리로 표시 (선택과 겹쳐도 구분된다) */
+  .dchip.today{box-shadow:inset 0 0 0 2px var(--ink-2)}
+  .dchip.today[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--ground)}
   .openonly{
     border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;
     font-size:12.5px;font-weight:600;color:var(--ink-2);white-space:nowrap;display:flex;align-items:center;gap:5px;
@@ -335,6 +339,7 @@
   .hrow.today .d{background:var(--ink);color:var(--ground)}
   .hrow.today .t{font-weight:600}
   .hrow .d.sun{color:var(--accent)}
+  .hrow .d.sat{color:var(--blue)}
   .hrow.off .d{color:var(--accent)}
   .hrow.off .t{color:var(--ink-3)}
   .hnote{font-size:12.5px;color:var(--ink-3);margin-top:8px;line-height:1.5}
@@ -564,9 +569,9 @@
   function renderDaybar(){
     var today = tokyoNow().day;
     $("daybar").innerHTML = DAYS_KO.map(function(d){        /* 일요일부터 */
-      return '<button type="button" class="dchip' + (d === "일" ? " sun" : "") + '" data-day="' + d +
-        '" aria-pressed="' + (d === st.day) + '">' +
-        '<b>' + d + '</b><small class="td">' + (d === today ? "오늘" : "·") + '</small></button>';
+      var cls = "dchip" + (d === "일" ? " sun" : d === "토" ? " sat" : "") + (d === today ? " today" : "");
+      return '<button type="button" class="' + cls + '" data-day="' + d + '" aria-pressed="' + (d === st.day) + '"' +
+        (d === today ? ' aria-label="' + d + '요일 (오늘)"' : "") + '><b>' + d + '</b></button>';
     }).join("");
     $("openonly").setAttribute("aria-pressed", !!st.openOnly);
   }
@@ -993,7 +998,7 @@
       out.push('<div class="hours">' + h.rows.map(function(r){
         var isToday = r.day && r.day.length === 1 && r.day === today;
         return '<div class="hrow' + (r.off ? " off" : "") + (isToday ? " today" : "") + '">' +
-          (r.day ? '<span class="d' + (r.day === "일" ? " sun" : "") + '">' + esc(r.day) + '</span>' : '<span class="d"></span>') +
+          (r.day ? '<span class="d' + (r.day === "일" ? " sun" : r.day === "토" ? " sat" : "") + '">' + esc(r.day) + '</span>' : '<span class="d"></span>') +
           '<span class="t">' + esc(r.time) + '</span></div>';
       }).join("") + '</div>');
       if (h.src) out.push('<p class="hsrc">' + esc(h.src) + '</p>');
@@ -1179,7 +1184,7 @@
 </script>
 <script>
   (function(){
-    var CURRENT = "26.09.18-1349";
+    var CURRENT = "26.09.18-1353";
     var btn = document.getElementById("upd");
     var latest = null;
 
