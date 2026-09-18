@@ -287,6 +287,20 @@
   .sec li{font-size:14px;padding:6px 0;border-bottom:1px solid var(--line-soft);color:var(--ink)}
   .sec li:last-child{border-bottom:0}
   .sec li.sub{color:var(--ink-2)}
+
+  /* 영업시간 — 요일 한 줄씩 */
+  .hours{display:flex;flex-direction:column;gap:0}
+  .hrow{display:flex;gap:10px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line-soft)}
+  .hrow:last-child{border-bottom:0}
+  .hrow .d{flex:none;min-width:22px;white-space:nowrap;padding-inline:4px;font-weight:600;font-size:13px;color:var(--ink-2);text-align:center;
+           border-radius:5px;padding:1px 0}
+  .hrow .t{flex:1;font-size:14px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .hrow.today .d{background:var(--ink);color:var(--ground)}
+  .hrow.today .t{font-weight:600}
+  .hrow.off .d{color:var(--accent)}
+  .hrow.off .t{color:var(--ink-3)}
+  .hnote{font-size:12.5px;color:var(--ink-3);margin-top:8px;line-height:1.5}
+  .hsrc{font-size:11.5px;color:var(--ink-3);margin-top:6px}
   .addr{display:flex;align-items:flex-start;gap:8px}
   .addr span{flex:1;overflow-wrap:anywhere}
   .copy{flex:none;border:1px solid var(--line);background:var(--surface-2);border-radius:999px;font-size:12px;font-weight:600;padding:2px 10px;color:var(--ink-2)}
@@ -739,6 +753,91 @@
   /* ---- 시트 (상세 · 필터) ---- */
   var openSheetId = null, openId = null, lastFocus = null;
   function sec(title, inner){ return '<div class="sec"><h3>' + title + '</h3>' + inner + '</div>'; }
+  /* 영업시간 문자열을 요일 줄로 쪼갠다.
+     구글 형식  : "월 11:30~14:00 · 화 11:30~14:00 · 휴무 월요일 (구글 지도 · 날짜 확인)"
+     원본/검색 형식: "월~금 런치 11:30~14:00 / 월~토 디너 18:00~23:00 · 일요일 휴무 (출처 · 날짜)" */
+  var DAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
+  var DAY_RE = /^([월화수목금토일](?:요일)?(?:\s*[~·]\s*[월화수목금토일](?:요일)?)*)\s+(.+)$/;
+
+  function parseHours(raw){
+    var src = "", body = String(raw || "");
+    var m = body.match(/\(([^()]*(?:확인|기준)[^()]*)\)\s*$/);
+    if (m){ src = m[1]; body = body.slice(0, m.index).trim(); }
+
+    var closed = "";
+    var cm = body.match(/·?\s*휴무\s*([^·]*)$/);
+    if (cm){ closed = cm[1].trim(); body = body.slice(0, cm.index).trim(); }
+    var cm2 = body.match(/^(.*?)·\s*([^·]*?)\s*휴무\s*$/);
+    if (!closed && cm2){ closed = cm2[2].trim(); body = cm2[1].trim(); }
+
+    var chunks = [];
+    body.split(" · ").forEach(function(part){
+      part = part.trim();
+      if (!part) return;
+      /* 한 덩어리 안에 "월~금 … / 월~토 …" 처럼 요일이 두 번 나오면 그것도 쪼갠다 */
+      if (part.indexOf(" / ") > 0 && (part.match(/[월화수목금토일]\s*[~·]?\s*[월화수목금토일]?\s+/g) || []).length > 1)
+        part.split(" / ").forEach(function(x){ if (x.trim()) chunks.push(x.trim()); });
+      else chunks.push(part);
+    });
+
+    /* "휴무 토·일" 처럼 시간이 없는 휴무 덩어리는 요일 줄로 돌린다 */
+    var rest = [];
+    chunks.forEach(function(ch){
+      var c1 = ch.match(/^휴무\s*(.+)$/), c2 = ch.match(/^(.+?)\s*휴무$/);
+      var days = (c1 && c1[1]) || (c2 && c2[1]) || "";
+      if (days && !/\d/.test(days)) closed = (closed ? closed + "·" : "") + days.trim();
+      else rest.push(ch);
+    });
+    var rows = [];
+    rest.forEach(function(ch){
+      var d = ch.match(DAY_RE);
+      if (d){ rows.push({ day:d[1].replace(/\s+/g, ""), time:d[2] }); return; }
+      /* 시간이 없고 요일만 있는 덩어리("일요일", "월요일·공휴일")는 휴무로 본다 */
+      if (!/\d/.test(ch) && /^[월화수목금토일]/.test(ch)){ closed = (closed ? closed + "·" : "") + ch; return; }
+      rows.push({ day:"", time:ch });
+    });
+    if (closed){
+      var extra = [];
+      closed.split(/[·,]/).forEach(function(x){
+        x = x.trim().replace(/^휴무\s*/, "");
+        if (!x) return;
+        var only = x.match(/^([월화수목금토일])(요일)?$/);
+        if (only){
+          var day = only[1];
+          var dup = rows.filter(function(r){ return r.day === day; });
+          if (dup.length) dup.forEach(function(r){ r.time = "휴무"; r.off = true; });
+          else rows.push({ day:day, time:"휴무", off:true });
+        } else extra.push(x);
+      });
+      if (extra.length) rows.push({ day:"", time:"휴무 " + extra.join(" · "), off:true });
+    }
+    /* 월→일 순서. 요일이 없는 줄은 시간이면 맨 위, 메모면 맨 아래 */
+    function rank(r){
+      if (r.day && r.day.length === 1) return (DAYS_KO.indexOf(r.day) + 6) % 7;
+      return /\d/.test(r.time) ? -1 : 99;
+    }
+    rows.sort(function(a, b){ return rank(a) - rank(b); });
+    return { rows:rows, src:src };
+  }
+
+  function hoursHtml(list){
+    var now = new Date(Date.now() + (new Date().getTimezoneOffset() + 540) * 60000);   /* 도쿄 시간 */
+    var today = DAYS_KO[now.getDay()];
+    var out = [];
+    list.forEach(function(raw){
+      var h = parseHours(raw);
+      if (!h.rows.length) return;
+      out.push('<div class="hours">' + h.rows.map(function(r){
+        var isToday = r.day && r.day.length === 1 && r.day === today;
+        return '<div class="hrow' + (r.off ? " off" : "") + (isToday ? " today" : "") + '">' +
+          (r.day ? '<span class="d">' + esc(r.day) + '</span>' : '<span class="d"></span>') +
+          '<span class="t">' + esc(r.time) + '</span></div>';
+      }).join("") + '</div>');
+      if (h.src) out.push('<p class="hsrc">' + esc(h.src) + '</p>');
+    });
+    return out.join("");
+  }
+
   function li(arr, cls){ return '<ul>' + arr.map(function(x){ return '<li' + (cls ? ' class="' + cls + '"' : "") + '>' + esc(x) + '</li>'; }).join("") + '</ul>'; }
 
   function renderDetail(){
@@ -775,7 +874,7 @@
     if (s.menu && s.menu.length) h.push(sec("메뉴", li(s.menu)));
     if (s.info && s.info.length) h.push(sec("더 알아둘 메뉴", li(s.info, "sub")));
     if (s.pricing && s.pricing.length) h.push(sec(s.event ? "기간" : "가격 · 판매 기간", li(s.pricing)));
-    if (s.hours && s.hours.length) h.push(sec("영업시간", li(s.hours)));
+    if (s.hours && s.hours.length) h.push(sec("영업시간", hoursHtml(s.hours)));
     if (s.notes && s.notes.length) h.push(sec("메모", li(s.notes, "sub")));
     if (s.addr && s.addr.length){
       h.push(sec("주소", '<ul>' + s.addr.map(function(a, i){
@@ -913,7 +1012,7 @@
 </script>
 <script>
   (function(){
-    var CURRENT = "26.09.18-1312";
+    var CURRENT = "26.09.18-1326";
     var btn = document.getElementById("upd");
     var latest = null;
 
