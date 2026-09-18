@@ -405,12 +405,18 @@
   };
 
   var PRICES = [
-    { key:"p1", label:"~1,500엔", test:function(p){ return p === "~1,500엔"; } },
-    { key:"p2", label:"~3,000엔", test:function(p){ return p === "1,500~3,000엔"; } },
-    { key:"p3", label:"~6,000엔", test:function(p){ return p === "3,000~6,000엔"; } },
-    { key:"p4", label:"6,000엔+", test:function(p){ return p === "6,000~12,000엔" || p === "12,000엔+"; } },
-    { key:"p0", label:"가격 모름", test:function(p){ return !p || p === "?"; } }
+    { key:"p1", label:"~1,500엔", max:1500 },
+    { key:"p2", label:"~3,000엔", max:3000 },
+    { key:"p3", label:"~6,000엔", max:6000 },
+    { key:"p4", label:"6,000엔+", max:Infinity },
+    { key:"p0", label:"가격 모름", max:null }
   ];
+  /* "1,500~3,000엔" · "990엔" · "780~1,180엔" · "12,000엔+" 에서 가장 큰 금액을 뽑는다 */
+  function priceMax(p){
+    var nums = String(p || "").match(/\d[\d,]*/g);
+    if (!nums) return null;
+    return Math.max.apply(null, nums.map(function(n){ return +n.replace(/,/g, ""); }));
+  }
   var POP_TOP = 30;   /* 추천 · 인기순에 보여줄 개수 */
 
   /* ---- 저장 (실패해도 앱은 돈다) ---- */
@@ -479,8 +485,10 @@
     return hay.indexOf(norm(q)) >= 0;
   }
   function priceKey(p){
-    for (var i = 0; i < PRICES.length; i++) if (PRICES[i].test(p)) return PRICES[i].key;
-    return "p0";
+    var n = priceMax(p);
+    if (n == null) return "p0";
+    for (var i = 0; i < PRICES.length; i++) if (PRICES[i].max != null && n <= PRICES[i].max) return PRICES[i].key;
+    return "p4";
   }
   /* 같은 칸 안에서는 OR, 칸끼리는 AND. skip 은 그 칸의 개수를 셀 때 자기 조건을 빼기 위함 */
   function filtered(skip){
@@ -765,6 +773,7 @@
     if (s.sig && s.sig.length) h.push(sec("대표 메뉴", '<p>' + esc(s.sig.join(" · ")) + '</p>'));
     if (s.menu && s.menu.length) h.push(sec("메뉴", li(s.menu)));
     if (s.info && s.info.length) h.push(sec("더 알아둘 메뉴", li(s.info, "sub")));
+    if (s.pricing && s.pricing.length) h.push(sec("가격 · 판매 기간", li(s.pricing)));
     if (s.hours && s.hours.length) h.push(sec("영업시간", li(s.hours)));
     if (s.notes && s.notes.length) h.push(sec("메모", li(s.notes, "sub")));
     if (s.addr && s.addr.length){
@@ -903,7 +912,7 @@
 </script>
 <script>
   (function(){
-    var CURRENT = "26.09.18-0910";
+    var CURRENT = "26.09.18-0939";
     var btn = document.getElementById("upd");
     var latest = null;
 
