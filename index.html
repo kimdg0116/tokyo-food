@@ -788,10 +788,34 @@
       if (days && !/\d/.test(days)) closed = (closed ? closed + "·" : "") + days.trim();
       else rest.push(ch);
     });
+    function expandDays(spec){
+      /* "월~금" → [월,화,수,목,금] · "토·일" → [토,일] · "월" → [월] */
+      var order = ["월", "화", "수", "목", "금", "토", "일"];
+      var out = [];
+      spec.replace(/요일/g, "").split("·").forEach(function(part){
+        var r = part.match(/^([월화수목금토일])~([월화수목금토일])$/);
+        if (r){
+          var a = order.indexOf(r[1]), b = order.indexOf(r[2]);
+          if (a >= 0 && b >= 0){
+            for (var i = a; ; i = (i + 1) % 7){ out.push(order[i]); if (i === b) break; }
+            return;
+          }
+        }
+        if (/^[월화수목금토일]$/.test(part)) out.push(part);
+      });
+      return out;
+    }
+
     var rows = [];
     rest.forEach(function(ch){
       var d = ch.match(DAY_RE);
-      if (d){ rows.push({ day:d[1].replace(/\s+/g, ""), time:d[2] }); return; }
+      if (d){
+        var spec = d[1].replace(/\s+/g, "");
+        var days = expandDays(spec);
+        if (days.length) days.forEach(function(dy){ rows.push({ day:dy, time:d[2] }); });
+        else rows.push({ day:spec, time:d[2] });
+        return;
+      }
       /* 시간이 없고 요일만 있는 덩어리("일요일", "월요일·공휴일")는 휴무로 본다 */
       if (!/\d/.test(ch) && /^[월화수목금토일]/.test(ch)){ closed = (closed ? closed + "·" : "") + ch; return; }
       rows.push({ day:"", time:ch });
@@ -811,6 +835,14 @@
       });
       if (extra.length) rows.push({ day:"", time:"휴무 " + extra.join(" · "), off:true });
     }
+    var merged = [];
+    rows.forEach(function(r){
+      var prev = merged.filter(function(x){ return x.day && x.day === r.day; })[0];
+      if (prev && !prev.off && !r.off) prev.time += " · " + r.time;
+      else merged.push(r);
+    });
+    rows = merged;
+
     /* 월→일 순서. 요일이 없는 줄은 시간이면 맨 위, 메모면 맨 아래 */
     function rank(r){
       if (r.day && r.day.length === 1) return (DAYS_KO.indexOf(r.day) + 6) % 7;
@@ -853,6 +885,7 @@
     if (s.pick) b.push('<span class="badge pick">숙소 근처 추천 ' + s.pick + '위</span>');
     if (s.kind) b.push('<span class="badge">' + esc(s.kind) + '</span>');
     if (s.price && s.price !== "?") b.push('<span class="badge">' + esc(s.price) + '</span>');
+    if (s.stars) b.push('<span class="badge">★ ' + esc(s.stars) + '</span>');
     if (s.views != null) b.push('<span class="badge">' + fmtViews(s.views) + '</span>');
     if (s.chain) b.push('<span class="badge">체인</span>');
     if (s.event) b.push('<span class="badge">가게 아님 · 이벤트</span>');
@@ -1012,7 +1045,7 @@
 </script>
 <script>
   (function(){
-    var CURRENT = "26.09.18-1326";
+    var CURRENT = "26.09.18-1334";
     var btn = document.getElementById("upd");
     var latest = null;
 
