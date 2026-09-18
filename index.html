@@ -166,6 +166,7 @@
   .openonly{
     border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;
     font-size:12.5px;font-weight:600;color:var(--ink-2);white-space:nowrap;display:flex;align-items:center;gap:5px;
+    letter-spacing:.02em;
   }
   .openonly[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:#fff}
   .openonly .odot{width:7px;height:7px;border-radius:50%;background:var(--good);flex:none}
@@ -575,7 +576,7 @@
       return '<button type="button" class="' + cls + '" data-day="' + d + '" aria-pressed="' + (d === st.day) + '"' +
         (d === today ? ' aria-label="' + d + '요일 (오늘)"' : "") + '><b>' + d + '</b></button>';
     }).join("");
-    var lbl = (st.day === today ? "오늘" : st.day) + " 영업만";
+    var lbl = (st.day === today ? "오늘" : st.day) + " OPEN";
     $("openonly").setAttribute("aria-pressed", !!st.openOnly);
     $("openonly").innerHTML = '<span class="odot"></span>' + esc(lbl);
     $("openonly").setAttribute("aria-label", lbl + " 보기");
@@ -1189,7 +1190,7 @@
 </script>
 <script>
   (function(){
-    var CURRENT = "26.09.18-1425";
+    var CURRENT = "26.09.18-1427";
     var btn = document.getElementById("upd");
     var latest = null;
 
