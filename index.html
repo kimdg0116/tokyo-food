@@ -156,6 +156,8 @@
   .dchip small{font-size:10px;color:var(--ink-3)}
   .dchip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--ground)}
   .dchip[aria-pressed="true"] small{color:var(--ground);opacity:.75}
+  .dchip.sun b{color:var(--accent)}
+  .dchip.sun[aria-pressed="true"] b{color:var(--ground)}
   .dchip .td{font-size:9.5px;letter-spacing:.04em}
   .openonly{
     border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;
@@ -332,6 +334,7 @@
   .hrow .t{flex:1;font-size:14px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
   .hrow.today .d{background:var(--ink);color:var(--ground)}
   .hrow.today .t{font-weight:600}
+  .hrow .d.sun{color:var(--accent)}
   .hrow.off .d{color:var(--accent)}
   .hrow.off .t{color:var(--ink-3)}
   .hnote{font-size:12.5px;color:var(--ink-3);margin-top:8px;line-height:1.5}
@@ -560,12 +563,10 @@
 
   function renderDaybar(){
     var today = tokyoNow().day;
-    var trip = (DATA && DATA.trip) || {};
-    $("daybar").innerHTML = ["월", "화", "수", "목", "금", "토", "일"].map(function(d){
-      var sub = trip[d] ? trip[d] : (d === today ? "오늘" : "");
-      return '<button type="button" class="dchip" data-day="' + d + '" aria-pressed="' + (d === st.day) + '">' +
-        '<b>' + d + '</b>' + (sub ? '<small class="td">' + esc(sub) + '</small>' : '<small class="td">·</small>') +
-        '</button>';
+    $("daybar").innerHTML = DAYS_KO.map(function(d){        /* 일요일부터 */
+      return '<button type="button" class="dchip' + (d === "일" ? " sun" : "") + '" data-day="' + d +
+        '" aria-pressed="' + (d === st.day) + '">' +
+        '<b>' + d + '</b><small class="td">' + (d === today ? "오늘" : "·") + '</small></button>';
     }).join("");
     $("openonly").setAttribute("aria-pressed", !!st.openOnly);
   }
@@ -909,7 +910,7 @@
 
     /* 월→일 순서. 요일이 없는 줄은 시간이면 맨 위, 메모면 맨 아래 */
     function rank(r){
-      if (r.day && r.day.length === 1) return (DAYS_KO.indexOf(r.day) + 6) % 7;
+      if (r.day && r.day.length === 1) return DAYS_KO.indexOf(r.day);   /* 일 → 토 */
       return /\d/.test(r.time) ? -1 : 99;
     }
     rows.sort(function(a, b){ return rank(a) - rank(b); });
@@ -992,7 +993,7 @@
       out.push('<div class="hours">' + h.rows.map(function(r){
         var isToday = r.day && r.day.length === 1 && r.day === today;
         return '<div class="hrow' + (r.off ? " off" : "") + (isToday ? " today" : "") + '">' +
-          (r.day ? '<span class="d">' + esc(r.day) + '</span>' : '<span class="d"></span>') +
+          (r.day ? '<span class="d' + (r.day === "일" ? " sun" : "") + '">' + esc(r.day) + '</span>' : '<span class="d"></span>') +
           '<span class="t">' + esc(r.time) + '</span></div>';
       }).join("") + '</div>');
       if (h.src) out.push('<p class="hsrc">' + esc(h.src) + '</p>');
@@ -1178,7 +1179,7 @@
 </script>
 <script>
   (function(){
-    var CURRENT = "26.09.18-1345";
+    var CURRENT = "26.09.18-1349";
     var btn = document.getElementById("upd");
     var latest = null;
 
