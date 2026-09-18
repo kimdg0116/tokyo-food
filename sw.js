@@ -1,5 +1,5 @@
 /* 도쿄 맛집 — 오프라인 캐시 */
-var VERSION = "26.09.18-0939";
+var VERSION = "26.09.18-0951";
 var CACHE = "tf-v" + VERSION;
 var CORE = ["./", "./index.html", "./data.json", "./manifest.webmanifest",
             "./apple-touch-icon.png", "./icon-192.png", "./icon-512.png"];
