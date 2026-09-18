@@ -585,7 +585,7 @@
         '</div>' +
       '</button>' +
       '<div class="actions">' +
-        '<a href="' + esc(mapUrl(s)) + '" target="_blank" rel="noopener">' + ICON.map + (s.chain ? '매장 찾기' : '구글맵') + '</a>' +
+        '<a href="' + esc(mapUrl(s)) + '" target="_blank" rel="noopener">' + ICON.map + (s.event ? '지도' : s.chain ? '매장 찾기' : '구글맵') + '</a>' +
         (s.video ? '<a href="' + esc(s.video) + '" target="_blank" rel="noopener">' + ICON.play + '영상</a>'
                  : '<span class="off">' + ICON.play + '영상</span>') +
         '<button type="button" class="star" data-fav="' + s.id + '" aria-pressed="' + !!fav[s.id] + '" aria-label="찜">' + (fav[s.id] ? ICON.starOn : ICON.star) + '</button>' +
@@ -756,10 +756,11 @@
     if (s.price && s.price !== "?") b.push('<span class="badge">' + esc(s.price) + '</span>');
     if (s.views != null) b.push('<span class="badge">' + fmtViews(s.views) + '</span>');
     if (s.chain) b.push('<span class="badge">체인</span>');
+    if (s.event) b.push('<span class="badge">가게 아님 · 이벤트</span>');
     if (b.length) h.push('<div class="badges">' + b.join("") + '</div>');
 
     h.push('<div class="bigbtns">' +
-      '<a class="bigbtn primary" href="' + esc(mapUrl(s)) + '" target="_blank" rel="noopener">' + ICON.map + (s.chain ? '매장 찾기' : '구글맵') + '</a>' +
+      '<a class="bigbtn primary" href="' + esc(mapUrl(s)) + '" target="_blank" rel="noopener">' + ICON.map + (s.event ? '지도' : s.chain ? '매장 찾기' : '구글맵') + '</a>' +
       (s.video ? '<a class="bigbtn" href="' + esc(s.video) + '" target="_blank" rel="noopener">' + ICON.play + '영상 보기</a>'
                : '<span class="bigbtn" style="opacity:.4">' + ICON.play + '영상 없음</span>') +
     '</div>');
@@ -773,7 +774,7 @@
     if (s.sig && s.sig.length) h.push(sec("대표 메뉴", '<p>' + esc(s.sig.join(" · ")) + '</p>'));
     if (s.menu && s.menu.length) h.push(sec("메뉴", li(s.menu)));
     if (s.info && s.info.length) h.push(sec("더 알아둘 메뉴", li(s.info, "sub")));
-    if (s.pricing && s.pricing.length) h.push(sec("가격 · 판매 기간", li(s.pricing)));
+    if (s.pricing && s.pricing.length) h.push(sec(s.event ? "기간" : "가격 · 판매 기간", li(s.pricing)));
     if (s.hours && s.hours.length) h.push(sec("영업시간", li(s.hours)));
     if (s.notes && s.notes.length) h.push(sec("메모", li(s.notes, "sub")));
     if (s.addr && s.addr.length){
@@ -912,7 +913,7 @@
 </script>
 <script>
   (function(){
-    var CURRENT = "26.09.18-0952";
+    var CURRENT = "26.09.18-0958";
     var btn = document.getElementById("upd");
     var latest = null;
 
