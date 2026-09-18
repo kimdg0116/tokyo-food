@@ -145,6 +145,41 @@
   .chip .n{font-family:Oswald,sans-serif;font-size:11.5px;color:var(--ink-3);margin-left:4px}
   .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--ground);font-weight:600}
   .chip[aria-pressed="true"] .n{color:var(--ground);opacity:.7}
+  /* 요일 선택 + 영업 배지 */
+  .daybar{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none}
+  .daybar::-webkit-scrollbar{display:none}
+  .dchip{
+    flex:1 0 auto;min-width:44px;border:1px solid var(--line);background:var(--surface);border-radius:10px;
+    padding:5px 6px;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.15;color:var(--ink-2);
+  }
+  .dchip b{font-size:13px;font-weight:600}
+  .dchip small{font-size:10px;color:var(--ink-3)}
+  .dchip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--ground)}
+  .dchip[aria-pressed="true"] small{color:var(--ground);opacity:.75}
+  .dchip .td{font-size:9.5px;letter-spacing:.04em}
+  .openonly{
+    border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;
+    font-size:12.5px;font-weight:600;color:var(--ink-2);white-space:nowrap;display:flex;align-items:center;gap:5px;
+  }
+  .openonly[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:#fff}
+
+  .st{font-size:11px;font-weight:600;border-radius:999px;padding:2px 8px;white-space:nowrap;flex:none}
+  .st.open{background:var(--good-soft);color:var(--good)}
+  .st.shut{background:var(--accent-soft);color:var(--accent)}
+  .st.unk{background:var(--surface-2);color:var(--ink-3)}
+  .st.irr{background:#FDF0D5;color:#8A6100}
+  :root[data-theme="dark"] .st.irr{background:#3A2E14;color:#F2C14E}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .st.irr{background:#3A2E14;color:#F2C14E} }
+  .card.shut .card-main{opacity:.5}
+  .now{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600}
+  .now .dot{width:7px;height:7px;border-radius:50%;background:var(--good);flex:none}
+  .now.soon .dot{background:#C98A0B}
+  .now.done .dot{background:var(--ink-3)}
+  .now.soon{color:#8A6100}
+  .now.done{color:var(--ink-3)}
+  :root[data-theme="dark"] .now.soon{color:#F2C14E}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .now.soon{color:#F2C14E} }
+
   .fbar{display:flex;align-items:center;gap:7px;margin-inline:-16px;padding-inline:16px;min-width:0}
   .fbar .chips{flex:1;min-width:0;margin-right:-16px;padding-right:16px}
   .fbtn{flex:none;display:flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--ink)}
@@ -338,6 +373,7 @@
       <button type="button" data-v="fav">★ 찜<span class="n" id="n-fav"></span></button>
       <button type="button" data-v="done">✓ 가봄<span class="n" id="n-done"></span></button>
     </div>
+    <div class="daybar" id="daybar" role="group" aria-label="요일 선택"></div>
   </header>
 
   <div class="rec" id="rec" hidden>
@@ -350,6 +386,7 @@
 
   <div class="fbar">
     <button type="button" class="fbtn" id="fopen" aria-haspopup="dialog"></button>
+    <button type="button" class="openonly" id="openonly" aria-pressed="false">그날 여는 곳만</button>
     <div class="chips" id="active"></div>
   </div>
 
@@ -439,7 +476,8 @@
 
   var DATA = null, byId = {};
   var fav = load("tf-fav", {}), done = load("tf-done", {});
-  var st = load("tf-state2", { view:"all", mode:"list", rec:"pop", regions:[], genres:[], prices:[] });
+  var st = load("tf-state2", { view:"all", mode:"list", rec:"pop", regions:[], genres:[], prices:[],
+                               day:"", openOnly:false });
   var q = "";
   var near = false, here = null;   /* 내 주변: 켜면 거리순. 위치는 저장하지 않는다 */
 
@@ -510,6 +548,7 @@
       if (skip !== "region" && st.regions.length && !has(st.regions, s.region)) return false;
       if (skip !== "genre" && st.genres.length && !has(st.genres, s.genre || "기타")) return false;
       if (skip !== "price" && st.prices.length && !has(st.prices, priceKey(s.price))) return false;
+      if (st.openOnly && dayStatus(s, st.day).state === "shut") return false;   /* 시간 미상·부정기는 남긴다 */
       return matchQ(s);
     });
   }
@@ -517,6 +556,20 @@
   function priceLabel(k){ for (var i = 0; i < PRICES.length; i++) if (PRICES[i].key === k) return PRICES[i].label; return k; }
 
   /* ---- 필터 바 ---- */
+  function dayLabel(d){ return d; }
+
+  function renderDaybar(){
+    var today = tokyoNow().day;
+    var trip = (DATA && DATA.trip) || {};
+    $("daybar").innerHTML = ["월", "화", "수", "목", "금", "토", "일"].map(function(d){
+      var sub = trip[d] ? trip[d] : (d === today ? "오늘" : "");
+      return '<button type="button" class="dchip" data-day="' + d + '" aria-pressed="' + (d === st.day) + '">' +
+        '<b>' + d + '</b>' + (sub ? '<small class="td">' + esc(sub) + '</small>' : '<small class="td">·</small>') +
+        '</button>';
+    }).join("");
+    $("openonly").setAttribute("aria-pressed", !!st.openOnly);
+  }
+
   function renderBar(){
     var n = nFilters();
     $("fopen").innerHTML = ICON.filter + "필터" + (n ? '<span class="n">' + n + '</span>' : "");
@@ -588,13 +641,23 @@
     var r = rankOf(s);
     var rank = r ? '<span class="rank">' + r + '</span>' : "";
     var sig = (s.sig && s.sig.length) ? s.sig.join(" · ") : (s.desc || "");
-    return '<article class="card' + (done[s.id] ? " done" : "") + '">' +
+    var ds = dayStatus(s, st.day), badge = "", nowLine = "";
+    if (ds.state === "shut") badge = '<span class="st shut">' + esc(dayLabel(st.day)) + ' 휴무</span>';
+    else if (ds.state === "open") badge = '<span class="st open">' + esc(ds.time.length > 22 ? ds.time.slice(0, 21) + "…" : ds.time) + '</span>';
+    else if (ds.state === "irregular") badge = '<span class="st irr">부정기' + (ds.time && ds.time !== "부정기" ? " · " + esc(ds.time.slice(0, 14)) : "") + '</span>';
+    else if (ds.state === "unknown") badge = '<span class="st unk">시간 미상</span>';
+    if (st.day === tokyoNow().day && ds.state === "open"){
+      var ns = nowState(ds);
+      if (ns) nowLine = '<div class="now ' + ns.cls + '"><span class="dot"></span>' + esc(ns.txt) + '</div>';
+    }
+    return '<article class="card' + (done[s.id] ? " done" : "") + (ds.state === "shut" ? " shut" : "") + '">' +
       '<button type="button" class="card-main" data-open="' + s.id + '">' +
         '<div class="thumb">' + thumb + rank + '</div>' +
         '<div class="info">' +
           '<div class="name">' + esc(s.name) + '</div>' +
           (s.jp ? '<div class="jp">' + esc(s.jp) + '</div>' : "") +
           '<div class="meta">' + meta.join("") + '</div>' +
+          (badge ? '<div style="margin-top:3px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">' + badge + nowLine + '</div>' : "") +
           (sig ? '<div class="sig">' + esc(sig) + '</div>' : "") +
         '</div>' +
       '</button>' +
@@ -662,6 +725,7 @@
   function render(){
     save("tf-state2", st);
     renderTabs();
+    renderDaybar();
     renderBar();
     renderTools();
     var items = listItems();
@@ -852,6 +916,72 @@
     return { rows:rows, src:src };
   }
 
+  /* 가게 + 요일 → 그날 상태
+     {state:"open"|"shut"|"irregular"|"unknown", time, ranges:[[분,분]…]} */
+  var statusCache = {};
+  function dayStatus(sh, day){
+    var key = sh.id + "|" + day;
+    if (statusCache[key]) return statusCache[key];
+    var res = { state:"unknown", time:"", ranges:[] };
+    if (sh.chain || sh.event){ res.state = "none"; return statusCache[key] = res; }
+    var rows = [], irregular = false;
+    (sh.hours || []).forEach(function(raw){
+      var h = parseHours(raw);
+      h.rows.forEach(function(r){ rows.push(r); });
+      if (/부정기/.test(raw)) irregular = true;
+    });
+    if (!rows.length) return statusCache[key] = res;
+
+    var mine = rows.filter(function(r){ return r.day === day; });
+    var noDay = rows.filter(function(r){ return !r.day && /\d/.test(r.time); });
+    var off = mine.filter(function(r){ return r.off || /휴무/.test(r.time); });
+    if (off.length){ res.state = "shut"; res.time = "휴무"; return statusCache[key] = res; }
+
+    var use = mine.length ? mine : noDay;      /* 요일 구분이 없으면 매일 같은 시간으로 본다 */
+    if (!use.length) return statusCache[key] = (irregular ? { state:"irregular", time:"부정기", ranges:[] } : res);
+
+    var txt = use.map(function(r){ return r.time; }).join(" · ");
+    res.time = txt;
+    res.state = irregular ? "irregular" : "open";
+    if (/24\s*시간/.test(txt)) res.ranges = [[0, 1440]];
+    else {
+      var re = /(\d{1,2}):(\d{2})\s*[~〜－-]\s*(?:다음날\s*)?(\d{1,2}):(\d{2})/g, m;
+      while ((m = re.exec(txt))){
+        var a = +m[1] * 60 + +m[2], b = +m[3] * 60 + +m[4];
+        if (b <= a) b += 1440;                  /* 새벽까지 하는 집 */
+        res.ranges.push([a, b]);
+      }
+    }
+    return statusCache[key] = res;
+  }
+
+  function tokyoNow(){
+    var d = new Date(Date.now() + (new Date().getTimezoneOffset() + 540) * 60000);
+    return { day: DAYS_KO[d.getDay()], min: d.getHours() * 60 + d.getMinutes() };
+  }
+
+  /* 오늘 기준 "지금" 상태 — 영업 중 / 마감 임박 / 종료 */
+  function nowState(st2){
+    if (!st2.ranges.length) return null;
+    var t = tokyoNow().min;
+    for (var i = 0; i < st2.ranges.length; i++){
+      var a = st2.ranges[i][0], b = st2.ranges[i][1];
+      var inRange = (t >= a && t < b) || (t + 1440 >= a && t + 1440 < b);
+      if (inRange){
+        var left = (t >= a ? b - t : b - (t + 1440));
+        if (b - a >= 1440) return { cls:"", txt:"24시간 영업" };
+        return left <= 60 ? { cls:"soon", txt:"마감 " + left + "분 전" }
+                          : { cls:"", txt:"영업 중 · " + fmtMin(b) + "까지" };
+      }
+    }
+    var next = st2.ranges.filter(function(r){ return r[0] > t; }).sort(function(x, y){ return x[0] - y[0]; })[0];
+    return { cls:"done", txt: next ? fmtMin(next[0]) + " 오픈" : "오늘 영업 종료" };
+  }
+  function fmtMin(m){
+    m = m % 1440;
+    return Math.floor(m / 60) + ":" + String(m % 60).padStart(2, "0");
+  }
+
   function hoursHtml(list){
     var now = new Date(Date.now() + (new Date().getTimezoneOffset() + 540) * 60000);   /* 도쿄 시간 */
     var today = DAYS_KO[now.getDay()];
@@ -983,6 +1113,8 @@
     if ((v = t.getAttribute("data-f"))){ toggleIn(st[v], t.getAttribute("data-val")); render(); return; }
     if ((v = t.getAttribute("data-clear"))){ st[v] = []; render(); return; }
     if ((v = t.getAttribute("data-rm"))){ toggleIn(st[v], t.getAttribute("data-val")); render(); return; }
+    if ((v = t.getAttribute("data-day"))){ st.day = v; statusCache = {}; render(); return; }
+    if (t.id === "openonly"){ st.openOnly = !st.openOnly; render(); return; }
     if ((v = t.getAttribute("data-rec"))){ st.rec = v; render(); return; }
     if ((v = t.getAttribute("data-mode"))){ st.mode = v; render(); return; }
     if ((v = t.getAttribute("data-v"))){ if (st.view !== v){ st.view = v; } render(); window.scrollTo(0, 0); return; }
@@ -1034,6 +1166,7 @@
       if (["all", "pick", "fav", "done"].indexOf(st.view) < 0) st.view = "all";
       if (["list", "map"].indexOf(st.mode) < 0) st.mode = "list";
       if (["pop", "hotel"].indexOf(st.rec) < 0) st.rec = "pop";
+      if (["월", "화", "수", "목", "금", "토", "일"].indexOf(st.day) < 0) st.day = tokyoNow().day;
       ["regions", "genres", "prices"].forEach(function(k){ if (!Array.isArray(st[k])) st[k] = []; });
       $("ver").textContent = "v" + d.version + " · " + d.shops.length + "곳";
       render();
@@ -1045,7 +1178,7 @@
 </script>
 <script>
   (function(){
-    var CURRENT = "26.09.18-1337";
+    var CURRENT = "26.09.18-1345";
     var btn = document.getElementById("upd");
     var latest = null;
 
