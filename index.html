@@ -577,7 +577,7 @@
         '</div>' +
       '</button>' +
       '<div class="actions">' +
-        '<a href="' + esc(mapUrl(s)) + '" target="_blank" rel="noopener">' + ICON.map + '구글맵</a>' +
+        '<a href="' + esc(mapUrl(s)) + '" target="_blank" rel="noopener">' + ICON.map + (s.chain ? '매장 찾기' : '구글맵') + '</a>' +
         (s.video ? '<a href="' + esc(s.video) + '" target="_blank" rel="noopener">' + ICON.play + '영상</a>'
                  : '<span class="off">' + ICON.play + '영상</span>') +
         '<button type="button" class="star" data-fav="' + s.id + '" aria-pressed="' + !!fav[s.id] + '" aria-label="찜">' + (fav[s.id] ? ICON.starOn : ICON.star) + '</button>' +
@@ -751,7 +751,7 @@
     if (b.length) h.push('<div class="badges">' + b.join("") + '</div>');
 
     h.push('<div class="bigbtns">' +
-      '<a class="bigbtn primary" href="' + esc(mapUrl(s)) + '" target="_blank" rel="noopener">' + ICON.map + '구글맵</a>' +
+      '<a class="bigbtn primary" href="' + esc(mapUrl(s)) + '" target="_blank" rel="noopener">' + ICON.map + (s.chain ? '매장 찾기' : '구글맵') + '</a>' +
       (s.video ? '<a class="bigbtn" href="' + esc(s.video) + '" target="_blank" rel="noopener">' + ICON.play + '영상 보기</a>'
                : '<span class="bigbtn" style="opacity:.4">' + ICON.play + '영상 없음</span>') +
     '</div>');
@@ -903,7 +903,7 @@
 </script>
 <script>
   (function(){
-    var CURRENT = "26.09.18-0904";
+    var CURRENT = "26.09.18-0910";
     var btn = document.getElementById("upd");
     var latest = null;
 
