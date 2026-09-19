@@ -271,6 +271,8 @@
   .thumb{flex:none;align-self:flex-start;width:112px;height:63px;border-radius:6px;background:var(--surface-2);overflow:hidden;position:relative}
   .thumb img{width:100%;height:100%;object-fit:cover;display:block}
   .thumb .rank{position:absolute;left:4px;top:4px;background:var(--accent);color:var(--accent-ink);font-family:Oswald,sans-serif;font-size:11px;font-weight:600;border-radius:4px;padding:0 5px;line-height:17px}
+  .thumb .gf{position:absolute;right:3px;top:3px;width:19px;height:19px;border-radius:50%;background:rgba(20,20,22,.55);color:#ff6f91;display:grid;place-items:center;font-size:11px;line-height:1;box-shadow:0 0 0 1px rgba(255,255,255,.35)}
+  .badge.gf{background:rgba(255,111,145,.16);color:#e05579}
   .thumb .noimg{display:grid;place-items:center;height:100%;font-size:24px;color:var(--ink-3)}
   .info{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px}
   .name{font-weight:700;font-size:15.5px;line-height:1.3;overflow-wrap:anywhere}
@@ -664,7 +666,7 @@
     }
     return '<article class="card' + (done[s.id] ? " done" : "") + (ds.state === "shut" ? " shut" : "") + '">' +
       '<button type="button" class="card-main" data-open="' + s.id + '">' +
-        '<div class="thumb">' + thumb + rank + '</div>' +
+        '<div class="thumb">' + thumb + rank + (s.gf ? '<span class="gf" aria-label="여자친구 픽">♥</span>' : "") + '</div>' +
         '<div class="info">' +
           '<div class="name">' + esc(s.name) + '</div>' +
           (s.jp ? '<div class="jp">' + esc(s.jp) + '</div>' : "") +
@@ -752,7 +754,7 @@
   function popupHtml(s){
     var m = [s.kind, s.price && s.price !== "?" ? s.price : "", s.region].filter(Boolean);
     if (near && here) m.push(fmtDist(distM(s)));
-    return '<div class="pop-n">' + (fav[s.id] ? "★ " : "") + esc(s.name) + '</div>' +
+    return '<div class="pop-n">' + (fav[s.id] ? "★ " : "") + (s.gf ? "♥ " : "") + esc(s.name) + '</div>' +
       '<div class="pop-m">' + esc(m.join(" · ")) + '</div>' +
       '<div class="pop-b"><button type="button" class="pri" data-open="' + s.id + '">자세히</button>' +
       '<a href="' + esc(mapUrl(s)) + '" target="_blank" rel="noopener">구글맵</a></div>';
@@ -1023,6 +1025,7 @@
     h.push('<div><h2 class="d-name" id="d-name">' + esc(s.name) + '</h2>' + (s.jp ? '<div class="d-jp">' + esc(s.jp) + '</div>' : "") + '</div>');
 
     var b = [];
+    if (s.gf) b.push('<span class="badge gf">♥ 여자친구 픽</span>');
     if (s.pop && s.pop <= POP_TOP) b.push('<span class="badge pick">인기 ' + s.pop + '위</span>');
     if (s.pick) b.push('<span class="badge pick">숙소 근처 추천 ' + s.pick + '위</span>');
     if (s.kind) b.push('<span class="badge">' + esc(s.kind) + '</span>');
@@ -1196,7 +1199,7 @@
 </script>
 <script>
   (function(){
-    var CURRENT = "26.09.19-2115";
+    var CURRENT = "26.09.19-2124";
     var btn = document.getElementById("upd");
     var latest = null;
 
