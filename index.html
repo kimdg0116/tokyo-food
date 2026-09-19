@@ -1173,6 +1173,12 @@
     .then(function(d){
       DATA = d;
       d.shops.forEach(function(s){ byId[s.id] = s; });
+      /* 예전 id 는 목록 순서(s000…)였다 → 이름 기반 고정 id 로 한 번만 옮긴다 */
+      if (d.idmap && !load("tf-idmap", 0)) {
+        var mv = function(o){ var r = {}; Object.keys(o).forEach(function(k){ r[d.idmap[k] || k] = o[k]; }); return r; };
+        fav = mv(fav); done = mv(done);
+        save("tf-fav", fav); save("tf-done", done); save("tf-idmap", 1);
+      }
       /* 데이터가 바뀌어 없어진 가게의 찜은 정리 */
       [fav, done].forEach(function(m){ Object.keys(m).forEach(function(k){ if (!byId[k]) delete m[k]; }); });
       if (["all", "pick", "fav", "done"].indexOf(st.view) < 0) st.view = "all";
@@ -1190,7 +1196,7 @@
 </script>
 <script>
   (function(){
-    var CURRENT = "26.09.18-1435";
+    var CURRENT = "26.09.19-2115";
     var btn = document.getElementById("upd");
     var latest = null;
 
