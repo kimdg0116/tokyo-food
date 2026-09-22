@@ -53,7 +53,7 @@ python3 "90 System/scripts/tokyo_food_views.py"         # 유튜브 조회수 �
 python3 "90 System/scripts/build_tokyo_food_app.py"     # data.json + thumbs 생성, 버전 스탬프
 ```
 
-그 다음 `~/Documents/tokyo-food` 에서 `git add -A && git commit -m "…" && git push`.
+그 다음 `~/Desktop/app/tokyo-food` 에서 `git add -A && git commit -m "…" && git push`.
 앱을 열면 `version.json` 을 보고 **「새 버전이 있어요」** 알림을 띄운다.
 
 > 구글 Places 키는 `~/.config/tokyo-food/google_places.key` (권한 600).
@@ -122,7 +122,7 @@ topics: ["[[🗺 오사카 여행 2027-03]]"]
 
 ```python
 FOOD = VAULT / "04 Life/여행/<도시 YYYY-MM>/맛집"      # 노트 폴더
-OUT  = pathlib.Path.home() / "Documents" / "<앱폴더>"   # 앱을 만들 곳
+OUT  = pathlib.Path.home() / "Desktop" / "app" / "<앱폴더>"   # 앱을 만들 곳
 REGIONS = ["난바", "우메다", ...]                       # 지역 노트 이름 (보이는 순서)
 TAIL_REGIONS = ["기타 지역", "체인점", ...]              # 맨 뒤로 보낼 노트
 ```
